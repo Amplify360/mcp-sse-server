@@ -97,33 +97,27 @@ class TestRegisterTools:
 
     @patch("src.mcp_tools.pkgutil.iter_modules")
     @patch("src.mcp_tools.importlib.import_module")
-    def test_register_tools_discovers_send_email_action(self, mock_import, mock_iter):
-        """Test register_tools discovers and registers send_email_action."""
+    def test_register_tools_discovers_status_action(self, mock_import, mock_iter):
+        """Test register_tools discovers and registers status_action."""
         # Mock the module discovery
-        mock_iter.return_value = [("", "send_email", "")]
+        mock_iter.return_value = [("", "status", "")]
 
         # Create a mock action function
-        mock_send_email_action = AsyncMock()
-        mock_send_email_action.__name__ = "send_email_action"
-        mock_send_email_action.__doc__ = "Send email action"
-        mock_send_email_action.__annotations__ = {
-            "recipients": list,
-            "subject": str,
-            "body": str,
-            "postmark_api_key": str,
-            "sender_email": str,
-        }
+        mock_status_action = AsyncMock()
+        mock_status_action.__name__ = "status_action"
+        mock_status_action.__doc__ = "Status action"
+        mock_status_action.__annotations__ = {}
 
-        # Mock the send_email module - use setattr instead of __dict__ assignment
-        mock_send_email_module = MagicMock()
-        setattr(mock_send_email_module, "send_email_action", mock_send_email_action)
+        # Mock the status module
+        mock_status_module = MagicMock()
+        setattr(mock_status_module, "status_action", mock_status_action)
 
         # Mock inspect.getmembers to return our action function
         with patch("src.mcp_tools.inspect.getmembers") as mock_getmembers:
             mock_getmembers.return_value = [
-                ("send_email_action", mock_send_email_action)
+                ("status_action", mock_status_action)
             ]
-            mock_import.return_value = mock_send_email_module
+            mock_import.return_value = mock_status_module
 
             # Create a mock MCP server
             mock_mcp_server = MagicMock()
@@ -131,12 +125,10 @@ class TestRegisterTools:
             # Call register_tools
             register_tools(
                 mcp_server=mock_mcp_server,
-                api_key="test_api_key",
-                from_email="test@example.com",
             )
 
-            # Verify register_tool was called (now expecting 2 tools: send_email and status)
-            assert mock_mcp_server.register_tool.call_count == 2
+            # Verify register_tool was called once for status action
+            assert mock_mcp_server.register_tool.call_count == 1
 
     @patch("src.mcp_tools.pkgutil.iter_modules")
     @patch("src.mcp_tools.importlib.import_module")
@@ -154,6 +146,4 @@ class TestRegisterTools:
         with pytest.raises(ImportError):
             register_tools(
                 mcp_server=mock_mcp_server,
-                api_key="test_api_key",
-                from_email="test@example.com",
             )

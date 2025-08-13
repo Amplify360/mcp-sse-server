@@ -1,7 +1,7 @@
 [project]
 name = "mcp-sse-server"
 version = "0.2.0"
-description = "Simple MCP server reference implementation with email sending capability"
+description = "Simple MCP server reference implementation"
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [

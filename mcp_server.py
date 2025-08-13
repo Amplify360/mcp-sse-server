@@ -1,7 +1,7 @@
 """
 Simplified MCP server reference implementation.
 
-This server demonstrates a minimal MCP setup with email sending capability.
+This server demonstrates a minimal MCP setup.
 """
 
 import argparse
@@ -84,8 +84,6 @@ def main():
         logger.info("Registering MCP tools")
         register_tools(
             mcp_server=mcp_server,
-            api_key=cast(str, config.POSTMARK_API_KEY),
-            from_email=cast(str, config.SENDER_EMAIL),
         )
 
         # Create and run app

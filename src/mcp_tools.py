@@ -24,8 +24,6 @@ from . import actions
 # Central place where *all* server-supplied objects live
 DEPENDENCIES: dict[str, object] = {
     # These will be populated by register_tools()
-    # "postmark_api_key": api_key,
-    # "sender_email": from_email,
     # append new shared objects here ↓
     # "weather_api_key": os.getenv("WEATHER_API_KEY"),
 }
@@ -81,7 +79,9 @@ class MCPServer:
             # Quickly respond for health-check style requests to avoid blocking
             if request.method in {"HEAD", "OPTIONS"}:
                 logger.debug(
-                    f"[{request_id}] Non-streaming method {request.method} received – returning 200 without opening SSE stream"
+                    "[%s] Non-streaming method %s - returning 200",
+                    request_id,
+                    request.method,
                 )
                 return JSONResponse({"status": "ok"}, status_code=200)
 
@@ -102,15 +102,14 @@ class MCPServer:
 
         async def handle_health(request: Request) -> JSONResponse:
             """Health check endpoint for Azure Container Apps and load balancers."""
-            return JSONResponse({
-                "status": "healthy",
-                "service": "mcp-sse-server",
-                "version": "1.0.0"
-            }, status_code=200)
+            return JSONResponse(
+                {"status": "healthy", "service": "mcp-sse-server", "version": "1.0.0"},
+                status_code=200,
+            )
 
         # Health endpoint bypasses API key middleware for Azure health checks
         health_routes = [Route("/health", endpoint=handle_health)]
-        
+
         # Protected routes with API key middleware
         protected_middleware = [Middleware(APIKeyMiddleware, api_key=self.api_key)]
         protected_routes = [
@@ -138,40 +137,36 @@ def make_wrapper(action_func):
     }
 
     async def wrapper(**kwargs):
-        kwargs.update(wanted)       # pre-populate with server objects
+        kwargs.update(wanted)  # pre-populate with server objects
         return await action_func(**kwargs)
 
     wrapper.__name__ = action_func.__name__.replace("_action", "_tool")
-    wrapper.__doc__  = action_func.__doc__
-    
+    wrapper.__doc__ = action_func.__doc__
+
     # Build a new signature that excludes injected parameters
-    params = [
-        p for p in sig.parameters.values()
-        if p.name not in wanted
-    ]
+    params = [p for p in sig.parameters.values() if p.name not in wanted]
     wrapper.__signature__ = inspect.Signature(
         parameters=params,
         return_annotation=sig.return_annotation,
     )
-    
+
     # Copy annotations but remove injected parameters
     if hasattr(action_func, "__annotations__"):
         wrapper.__annotations__ = {
-            k: v for k, v in action_func.__annotations__.items() 
-            if k not in wanted
+            k: v for k, v in action_func.__annotations__.items() if k not in wanted
         }
-    
+
     return wrapper
 
 
-def register_tools(mcp_server: MCPServer, api_key: str, from_email: str) -> None:
+def register_tools(mcp_server: MCPServer) -> None:
     """Register all MCP tools by auto-discovering action modules."""
 
     # Populate the dependencies registry
-    DEPENDENCIES.update({
-        "postmark_api_key": api_key,
-        "sender_email": from_email,
-    })
+    #     DEPENDENCIES.update({
+    #     "postmark_api_key": api_key,
+    #     "sender_email": from_email,
+    # })
 
     logger.info("Starting auto-discovery of action modules")
 

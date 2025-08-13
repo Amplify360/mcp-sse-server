@@ -1,6 +1,6 @@
 # MCP SSE Server - Reference Implementation
 
-A minimal MCP (Model Context Protocol) server implementation using Server-Sent Events (SSE) transport, demonstrating email sending capability. Unlike many MCP servers examples that use stdio transport, this is a remote SSE server that can be deployed via Docker to any hosting platform. This serves as a clean, easy-to-understand reference for building deployable MCP servers.
+A minimal MCP (Model Context Protocol) server implementation using Server-Sent Events (SSE) transport. Unlike many MCP servers examples that use stdio transport, this is a remote SSE server that can be deployed via Docker to any hosting platform. This serves as a clean, easy-to-understand reference for building deployable MCP servers.
 
 > **Note:** This implementation prioritizes clarity and ease of understanding over production-ready features. It does not include comprehensive production aspects such as robust error handling, monitoring, security hardening, rate limiting, or scalability considerations that would be required for enterprise deployments.
 
@@ -8,8 +8,7 @@ A minimal MCP (Model Context Protocol) server implementation using Server-Sent E
 
 - **SSE Transport**: Server-Sent Events for remote MCP server deployment
 - **Docker Ready**: Containerized for easy deployment to any cloud platform
-- **Simple Email Sending**: Send emails via Postmark SMTP
-- **MCP Integration**: Exposes email functionality as MCP tools
+- **MCP Integration**
 - **Clean Architecture**: Minimal dependencies and clear separation of concerns
 - **Configurable Logging**: Console logging with optional log level override
 - **Environment-based Configuration**: Uses `.env` files for setup
@@ -29,8 +28,6 @@ Then edit `.env` with your values:
 ```env
 # Required
 MCP_SERVER_AUTH_KEY=your-mcp-auth-key
-POSTMARK_API_KEY=your-postmark-api-key
-SENDER_EMAIL=your-sender@example.com
 
 # Optional
 LOG_LEVEL=INFO
@@ -196,11 +193,10 @@ You can test your MCP SSE server in AI Buddy using ngrok to create a secure tunn
    - Set the `X-API-Key` header value to match your `MCP_SERVER_AUTH_KEY` from `.env`
 
 4. **Test the connection:**
-   - AI Buddy should now be able to connect to your local MCP server
-   - Ask the expert to reveal what tool calls it has access to
-   - You should see a request come through ngrok and the app server (in console )output
-   - The expert should include in its list of tools the email sending tool
-   - You can then request it to send a test email
+    - AI Buddy should now be able to connect to your local MCP server
+    - Ask the expert to reveal what tool calls it has access to
+    - You should see a request come through ngrok and the app server (in console )output
+    - The expert should include in its list of tools the available actions
 
 
 ## Project Structure
@@ -214,10 +210,10 @@ mcp-sse-server/
 │   ├── mcp_tools.py        # MCP server and tools registration
 │   ├── utils/              # Utility modules
 │   │   ├── __init__.py     # Package marker
-│   │   └── email.py        # Email utilities (moved from email_utils.py)
+│   │   └── __init__.py     # Package marker
 │   └── actions/            # MCP action implementations
 │       ├── __init__.py     # Package marker
-│       └── send_email.py   # Email sending action
+│       └── status.py       # Example action with no dependencies
 ├── tests/                  # Test files
 │   ├── test_config.py      # Configuration tests
 │   ├── test_email_utils.py # Email utility tests
@@ -239,8 +235,6 @@ mcp-sse-server/
 
 **Required:**
 - `MCP_SERVER_AUTH_KEY`: Authentication key for MCP requests
-- `POSTMARK_API_KEY`: Your Postmark API key for sending emails
-- `SENDER_EMAIL`: The email address to send from
 
 **Optional:**
 - `LOG_LEVEL`: Logging level (default: INFO)
@@ -258,7 +252,6 @@ The server uses a transparent actions-based architecture where each MCP tool is 
 ```
 src/actions/
 ├── __init__.py          # Package marker
-├── send_email.py        # Email sending functionality
 └── status.py            # Server status functionality (no dependencies)
 ```
 
@@ -356,15 +349,11 @@ async def greet_user_action(name: str, greeting: str = "Hello") -> str:
 
 **Action Using Server Dependencies:**
 ```python
-async def send_notification_action(
+async def some_action(
     message: str,
-    recipient: str,
-    postmark_api_key: str,  # Injected because it's in DEPENDENCIES
-    sender_email: str,      # Injected because it's in DEPENDENCIES
+    some_api_key: str,  # Injected because it's in DEPENDENCIES
 ) -> str:
-    """Send notification email using server dependencies."""
-    # Use postmark_api_key and sender_email here
-    return f"Sent '{message}' to {recipient}"
+    return f"Processed '{message}'"
 ```
 
 **Action with Custom Dependencies:**
@@ -381,7 +370,7 @@ async def fetch_weather_action(
 #### Function Requirements
 
 **Naming Convention:**
-- Function name must end with `_action` (e.g., `send_email_action`)
+- Function name must end with `_action` (e.g., `status_action`)
 - The registered MCP tool will be named by replacing `_action` with `_tool`
 
 **Parameters:**
@@ -402,7 +391,7 @@ async def fetch_weather_action(
 
 When the server starts:
 
-1. The `register_tools()` function populates the `DEPENDENCIES` registry
+1. The `register_tools()` function populates the `DEPENDENCIES` registry (if needed for your actions)
 2. It scans the `src/actions/` package for Python modules
 3. It looks for async functions ending with `_action`
 4. For each action, it inspects the function signature
@@ -419,7 +408,6 @@ uv run python -m pytest tests/ -v
 uv run python -m pytest tests/test_mcp_tools.py::TestRegisterTools -v
 
 # Test individual actions
-uv run python -m pytest tests/test_send_email_action.py -v
 ```
 
 ## Dependencies

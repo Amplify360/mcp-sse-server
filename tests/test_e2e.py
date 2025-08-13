@@ -69,23 +69,23 @@ class TestE2EIntegration:
     @patch("src.mcp_tools.importlib.import_module")
     def test_tool_registration_integration(self, mock_import, mock_iter):
         """Test complete tool registration process integration."""
-        # Mock the send_email module discovery
-        mock_iter.return_value = [("", "send_email", "")]
+        # Mock the status module discovery
+        mock_iter.return_value = [("", "status", "")]
 
         # Create a mock action function
-        async def mock_send_email_action(recipients, subject, body, **kwargs):
-            return f"Mock email sent to {len(recipients)} recipients"
+        async def mock_status_action():
+            return {"status": "ok"}
 
-        mock_send_email_action.__name__ = "send_email_action"
-        mock_send_email_action.__doc__ = "Mock send email action"
+        mock_status_action.__name__ = "status_action"
+        mock_status_action.__doc__ = "Mock status action"
 
         # Mock the module using MagicMock
         mock_module = MagicMock()
-        setattr(mock_module, "send_email_action", mock_send_email_action)
+        setattr(mock_module, "status_action", mock_status_action)
 
         with patch("src.mcp_tools.inspect.getmembers") as mock_getmembers:
             mock_getmembers.return_value = [
-                ("send_email_action", mock_send_email_action)
+                ("status_action", mock_status_action)
             ]
             mock_import.return_value = mock_module
 
@@ -95,8 +95,6 @@ class TestE2EIntegration:
             # Register tools
             register_tools(
                 mcp_server=server,
-                api_key="postmark_api_key",
-                from_email="test@example.com",
             )
 
             # Verify the tool was registered by checking the MCP server's tools

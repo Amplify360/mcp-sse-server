@@ -14,8 +14,6 @@ class Settings(BaseSettings):
 
     # Essential MCP server settings
     MCP_SERVER_AUTH_KEY: Optional[str] = None
-    POSTMARK_API_KEY: Optional[str] = None
-    SENDER_EMAIL: Optional[str] = None
 
     # Optional settings with defaults
     LOG_LEVEL: str = "DEBUG"
@@ -53,7 +51,7 @@ def load_config(dotenv_path: Optional[Path] = None) -> Settings:
     settings = Settings()
 
     # Validate required keys
-    required_keys = ["MCP_SERVER_AUTH_KEY", "POSTMARK_API_KEY", "SENDER_EMAIL"]
+    required_keys = ["MCP_SERVER_AUTH_KEY"]
     missing_keys = []
 
     for key in required_keys:
